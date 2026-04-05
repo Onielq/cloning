@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terminal — Yard Operating System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --black: #050505;
+  --white: #ffffff;
+  --teal: #0a2118;
+  --teal-mid: #0d2a1e;
+  --lime: #9bff00;
+  --grid-line-dark: rgba(255,255,255,0.065);
+  --grid-dot-dark: rgba(255,255,255,0.16);
+  --grid-line-teal: rgba(100,220,160,0.12);
+  --grid-dot-teal: rgba(100,220,160,0.25);
+  --text-dark: #0b1f18;
+  --text-muted: rgba(11,31,24,0.3);
+  --cyan: rgba(100,200,220,1);
+}
+
+html { scroll-behavior: auto; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--black);
+  color: var(--white);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ─── CURSOR ─── */
+#cursor {
+  position: fixed; top: 0; left: 0;
+  width: 8px; height: 8px;
+  background: var(--lime);
+  border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  mix-blend-mode: difference;
+  will-change: transform;
+}
+#cursorRing {
+  position: fixed; top: 0; left: 0;
+  width: 34px; height: 34px;
+  border: 1.5px solid rgba(155,255,0,0.45);
+  border-radius: 50%;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+  will-change: transform;
+}
+
+/* ─── NAV ─── */
+nav {
+  position: fixed;
+  top: 18px; left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 56px);
+  max-width: 1080px;
+  background: rgba(22,22,22,0.72);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border-radius: 13px;
+  border: 1px solid rgba(255,255,255,0.09);
+  padding: 0 24px;
+  height: 58px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 1000;
+  transition: background 0.4s;
+}
+nav.on-white {
+  background: rgba(240,240,240,0.82);
+  border-color: rgba(0,0,0,0.08);
+}
+nav.on-teal {
+  background: rgba(10,30,20,0.82);
+  border-color: rgba(100,220,160,0.12);
+}
+
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: var(--white);
+  flex-shrink: 0;
+}
+nav.on-white .nav-logo { color: var(--text-dark); }
+.nav-logo-icon {
+  width: 28px; height: 28px;
+  background: var(--white);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+}
+nav.on-white .nav-logo-icon { background: var(--text-dark); }
+.nav-logo-icon svg { width: 16px; height: 16px; }
+.nav-logo span {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: 16px; letter-spacing: -0.02em;
+}
+
+.nav-links {
+  display: flex; align-items: center; gap: 2px; list-style: none;
+}
+.nav-links a {
+  color: rgba(255,255,255,0.72);
+  text-decoration: none; font-size: 13px; font-weight: 400;
+  letter-spacing: 0.005em;
+  padding: 6px 11px; border-radius: 7px;
+  transition: color 0.2s, background 0.2s;
+  display: flex; align-items: center; gap: 4px;
+}
+nav.on-white .nav-links a { color: rgba(11,31,24,0.65); }
+.nav-links a:hover { background: rgba(255,255,255,0.09); color: var(--white); }
+nav.on-white .nav-links a:hover { background: rgba(0,0,0,0.06); color: var(--text-dark); }
+.chevron { font-size: 9px; opacity: 0.55; }
+
+.nav-cta {
+  background: var(--white) !important;
+  color: var(--black) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 600 !important; font-size: 11.5px !important;
+  letter-spacing: 0.09em !important; text-transform: uppercase;
+  padding: 9px 18px !important;
+  border-radius: 7px !important;
+  transition: background 0.2s, color 0.2s !important;
+}
+nav.on-white .nav-cta { background: var(--text-dark) !important; color: var(--white) !important; }
+.nav-cta:hover { background: var(--lime) !important; color: var(--black) !important; }
+
+/* ─── HERO ─── */
+#hero {
+  height: 100vh;
+  background: var(--black);
+  position: relative; overflow: hidden;
+}
+
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line-dark) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line-dark) 1px, transparent 1px);
+  background-size: 82px 82px;
+}
+.hero-grid-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, var(--grid-dot-dark) 1.2px, transparent 1.2px);
+  background-size: 82px 82px;
+  background-position: 41px 41px;
+  opacity: 0.6;
+}
+/* Section divider: white floor with two concave cutouts */
+.section-divider {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 72px;
+  pointer-events: none;
+}
+.section-divider svg {
+  position: absolute; bottom: 0; left: 0;
+  width: 100%; height: 100%;
+}
+
+/* ─── HEADLINE ─── */
+#headline {
+  background: var(--white);
+  padding: 110px 60px 100px;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.headline-text {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(36px, 5.2vw, 74px);
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.1; letter-spacing: -0.03em;
+  max-width: 880px; margin: 0 auto;
+}
+.headline-word { display: inline-block; overflow: hidden; vertical-align: bottom; }
+.headline-word-inner { display: inline-block; transform: translateY(110%); }
+
+/* ─── SCROLL STORY ─── */
+#scroll-story {
+  position: relative; background: var(--white);
+}
+.story-sticky {
+  position: sticky; top: 0; height: 100vh;
+  display: grid; grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+}
+
+/* Left */
+.story-left {
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 80px 50px 80px 90px;
+  position: relative; background: var(--white);
+}
+.step-num {
+  font-family: 'DM Sans', monospace;
+  font-size: 11px; font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  position: absolute;
+  left: 90px; top: 50%;
+  transform: translateY(calc(-50% + 72px));
+}
+.story-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(26px, 2.8vw, 42px);
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.15; letter-spacing: -0.025em;
+  max-width: 370px;
+  position: absolute;
+  left: 90px; top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+}
+
+/* Right viz panel */
+.story-right {
+  position: relative;
+  background: var(--black);
+  overflow: hidden;
+  margin: 18px 18px 18px 0;
+  border-radius: 18px;
+}
+/* The distinctive left notch */
+.story-right::before {
+  content: '';
+  position: absolute;
+  left: -1px; top: 50%;
+  transform: translateY(-50%);
+  width: 52px; height: 140px;
+  background: var(--white);
+  border-radius: 0 70px 70px 0;
+  z-index: 2;
+}
+.viz-canvas { position: absolute; inset: 0; overflow: hidden; }
+.viz-stars {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: 14px 14px;
+  opacity: 0.18;
+}
+.viz-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(100,200,180,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100,200,180,0.07) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.dock-scene {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.7s ease;
+}
+
+/* Scan line */
+#scanLine {
+  position: absolute; left: 60px; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(155,255,0,0.35), transparent);
+  top: 50%; opacity: 0; pointer-events: none;
+}
+
+/* Progress dots */
+#progressDots {
+  position: fixed;
+  right: 28px; top: 50%;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 500; opacity: 0;
+  transition: opacity 0.4s;
+}
+.pdot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(11,31,24,0.2);
+  cursor: pointer; transition: all 0.3s;
+}
+.pdot.active { background: var(--text-dark); transform: scale(1.4); }
+
+/* ─── CLOSING DIVIDER (white→teal) ─── */
+.teal-divider-top {
+  width: 100%; overflow: hidden;
+  background: var(--white); /* background is the top color */
+  line-height: 0;
+}
+.teal-divider-top svg { display: block; }
+
+/* ─── CLOSING ─── */
+#closing {
+  background: var(--teal);
+  position: relative; overflow: hidden;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 100px 40px 160px;
+}
+.closing-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line-teal) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line-teal) 1px, transparent 1px);
+  background-size: 88px 88px;
+}
+.closing-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, var(--grid-dot-teal) 1.5px, transparent 1.5px);
+  background-size: 88px 88px;
+  background-position: 44px 44px;
+  opacity: 0.6;
+}
+.closing-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px; font-weight: 300;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.02em;
+  margin-bottom: 14px;
+  position: relative; z-index: 1;
+  opacity: 0; transform: translateY(16px);
+}
+.closing-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(52px, 8vw, 128px);
+  font-weight: 800;
+  color: var(--white);
+  line-height: 0.96; letter-spacing: -0.04em;
+  text-align: center;
+  position: relative; z-index: 1;
+}
+.closing-title-line { display: block; overflow: hidden; }
+.closing-title-word { display: inline-block; }
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="cursor"></div>
+<div id="cursorRing"></div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="8" height="8" rx="1.5" fill="currentColor" style="color:#050505"/>
+        <rect x="13" y="3" width="8" height="8" rx="1.5" fill="currentColor" style="color:#050505; opacity:0.5"/>
+        <rect x="3" y="13" width="8" height="8" rx="1.5" fill="currentColor" style="color:#050505; opacity:0.5"/>
+        <rect x="13" y="13" width="8" height="8" rx="1.5" fill="currentColor" style="color:#050505; opacity:0.25"/>
+      </svg>
+    </div>
+    <span>Terminal</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#">System <span class="chevron">▾</span></a></li>
+    <li><a href="#">Markets <span class="chevron">▾</span></a></li>
+    <li><a href="#">Insights <span class="chevron">▾</span></a></li>
+    <li><a href="#">Resources <span class="chevron">▾</span></a></li>
+    <li><a href="#">About</a></li>
+  </ul>
+  <a href="#" class="nav-cta">Contact</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-grid-dots"></div>
+  <!-- Black-to-white divider with two concave bumps -->
+  <div class="section-divider">
+    <svg viewBox="0 0 1440 72" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="
+        M0,72 L0,12
+        C0,12 200,12 280,12
+        C320,12 320,72 360,72
+        L1080,72
+        C1120,72 1120,12 1160,12
+        C1240,12 1440,12 1440,12
+        L1440,72 Z
+      " fill="white"/>
+    </svg>
+  </div>
+</section>
+
+<!-- HEADLINE -->
+<section id="headline">
+  <h1 class="headline-text" id="headlineText">
+    Imagine the yard as an intelligent bridge seamlessly connecting highway to warehouse.
+  </h1>
+</section>
+
+<!-- SCROLL STORY -->
+<div id="scroll-story">
+  <div class="story-sticky" id="storySticky">
+    <!-- Left text -->
+    <div class="story-left">
+      <div class="step-num" id="stepNum">01</div>
+      <div class="story-title" id="storyTitle0">Autonomous, agentic AI&#8209;driven workflows from gate to dock</div>
+      <div class="story-title" id="storyTitle1">Single pane of glass visibility of all yard operations</div>
+      <div class="story-title" id="storyTitle2">Managed by a unified platform with AI computer vision</div>
+      <div class="story-title" id="storyTitle3">Digitally transformed, data rich, and predictive</div>
+    </div>
+
+    <!-- Right viz -->
+    <div class="story-right">
+      <div class="viz-canvas">
+        <div class="viz-stars"></div>
+        <div class="viz-grid"></div>
+
+        <!-- SCENE 0: Single truck check-in -->
+        <div class="dock-scene" id="scene0">
+          <svg id="truck0" style="width:300px;opacity:0" viewBox="0 0 320 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Road -->
+            <line x1="160" y1="0" x2="160" y2="210" stroke="rgba(100,200,220,0.12)" stroke-width="2"/>
+            <!-- Cab -->
+            <rect x="98" y="16" width="124" height="60" rx="7" stroke="rgba(100,200,220,0.65)" stroke-width="1.5" fill="rgba(100,200,220,0.04)"/>
+            <rect x="108" y="23" width="42" height="20" rx="3" stroke="rgba(100,200,220,0.3)" stroke-width="1" fill="none"/>
+            <rect x="170" y="23" width="42" height="20" rx="3" stroke="rgba(100,200,220,0.3)" stroke-width="1" fill="none"/>
+            <!-- Trailer -->
+            <rect x="58" y="86" width="204" height="104" rx="5" stroke="rgba(100,200,220,0.45)" stroke-width="1.2" fill="rgba(100,200,220,0.02)"/>
+            <!-- Interior grid -->
+            <line x1="58" y1="119" x2="262" y2="119" stroke="rgba(100,200,220,0.18)" stroke-width="1"/>
+            <line x1="58" y1="152" x2="262" y2="152" stroke="rgba(100,200,220,0.18)" stroke-width="1"/>
+            <line x1="160" y1="86" x2="160" y2="190" stroke="rgba(100,200,220,0.12)" stroke-width="1"/>
+            <!-- Wheels -->
+            <rect x="44" y="96" width="18" height="14" rx="2" stroke="rgba(100,200,220,0.55)" stroke-width="1" fill="rgba(100,200,220,0.06)"/>
+            <rect x="44" y="128" width="18" height="14" rx="2" stroke="rgba(100,200,220,0.55)" stroke-width="1" fill="rgba(100,200,220,0.06)"/>
+            <rect x="44" y="160" width="18" height="14" rx="2" stroke="rgba(100,200,220,0.55)" stroke-width="1" fill="rgba(100,200,220,0.06)"/>
+            <rect x="258" y="96" width="18" height="14" rx="2" stroke="rgba(100,200,220,0.55)" stroke-width="1" fill="rgba(100,200,220,0.06)"/>
+            <rect x="258" y="128" width="18" height="14" rx="2" stroke="rgba(100,200,220,0.55)" stroke-width="1" fill="rgba(100,200,220,0.06)"/>
+            <rect x="258" y="160" width="18" height="14" rx="2" stroke="rgba(100,200,220,0.55)" stroke-width="1" fill="rgba(100,200,220,0.06)"/>
+            <!-- Labels -->
+            <text x="168" y="78" fill="rgba(155,255,0,0.75)" font-family="monospace" font-size="9" letter-spacing="1.5">• CHECK IN: 2:34 PM</text>
+            <text x="66" y="100" fill="rgba(100,200,220,0.5)" font-family="monospace" font-size="8" letter-spacing="0.5">44C TM3L</text>
+            <text x="148" y="100" fill="rgba(155,255,0,0.6)" font-family="monospace" font-size="8" letter-spacing="0.5">• AMERICAN FREIGHT</text>
+          </svg>
+        </div>
+
+        <!-- SCENE 1: Dock lanes overview -->
+        <div class="dock-scene" id="scene1" style="opacity:0">
+          <svg style="width:88%;max-width:520px;height:88%" viewBox="0 0 520 440" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Lane 6 -->
+            <g transform="translate(20,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.22)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.35)" font-family="monospace" font-size="10">6</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.42)" stroke-width="1" fill="rgba(100,200,220,0.03)"/>
+              <rect x="6" y="116" width="60" height="76" rx="3" stroke="rgba(100,200,220,0.25)" stroke-width="1" fill="none"/>
+            </g>
+            <!-- Lane 8 -->
+            <g transform="translate(108,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.22)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.35)" font-family="monospace" font-size="10">8</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.42)" stroke-width="1" fill="rgba(100,200,220,0.03)"/>
+            </g>
+            <!-- Lane 10 — HIGHLIGHTED -->
+            <g transform="translate(196,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(155,255,0,0.7)" stroke-width="1.5" fill="rgba(155,255,0,0.03)"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(155,255,0,0.8)" font-family="monospace" font-size="10">10</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(155,255,0,0.55)" stroke-width="1.5" fill="rgba(155,255,0,0.05)"/>
+            </g>
+            <!-- Lane 12 -->
+            <g transform="translate(284,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.22)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.35)" font-family="monospace" font-size="10">12</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.42)" stroke-width="1" fill="rgba(100,200,220,0.03)"/>
+              <rect x="6" y="116" width="60" height="76" rx="3" stroke="rgba(100,200,220,0.25)" stroke-width="1" fill="none"/>
+            </g>
+            <!-- Lane 13 -->
+            <g transform="translate(372,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.22)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.35)" font-family="monospace" font-size="10">13</text>
+              <rect x="6" y="8" width="60" height="90" rx="3" stroke="rgba(100,200,220,0.42)" stroke-width="1" fill="rgba(100,200,220,0.03)"/>
+            </g>
+            <!-- Gate dashed line -->
+            <line x1="20" y1="420" x2="500" y2="420" stroke="rgba(100,200,220,0.25)" stroke-width="1.5" stroke-dasharray="8 5"/>
+          </svg>
+        </div>
+
+        <!-- SCENE 2: AI vision -->
+        <div class="dock-scene" id="scene2" style="opacity:0">
+          <svg style="width:88%;max-width:520px;height:88%" viewBox="0 0 520 440" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(20,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.2)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.3)" font-family="monospace" font-size="10">3</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.35)" stroke-width="1" fill="rgba(100,200,220,0.02)"/>
+              <rect x="6" y="116" width="60" height="76" rx="3" stroke="rgba(100,200,220,0.2)" stroke-width="1" fill="none"/>
+            </g>
+            <g transform="translate(108,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.2)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.3)" font-family="monospace" font-size="10">5</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.35)" stroke-width="1" fill="rgba(100,200,220,0.02)"/>
+              <circle cx="36" cy="58" r="34" stroke="rgba(155,255,0,0.5)" stroke-width="1.5" fill="none" stroke-dasharray="5 3">
+                <animateTransform attributeName="transform" type="rotate" from="0 36 58" to="360 36 58" dur="4s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="36" cy="58" r="4" fill="rgba(155,255,0,0.85)"/>
+            </g>
+            <g transform="translate(196,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.2)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.3)" font-family="monospace" font-size="10">8</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.35)" stroke-width="1" fill="rgba(100,200,220,0.02)"/>
+              <circle cx="36" cy="58" r="34" stroke="rgba(155,255,0,0.4)" stroke-width="1.5" fill="none">
+                <animate attributeName="r" values="28;36;28" dur="3s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="36" cy="58" r="4" fill="rgba(155,255,0,0.65)"/>
+            </g>
+            <g transform="translate(284,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.2)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.3)" font-family="monospace" font-size="10">10</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.35)" stroke-width="1" fill="rgba(100,200,220,0.02)"/>
+              <circle cx="36" cy="168" r="34" stroke="rgba(155,255,0,0.45)" stroke-width="1.5" fill="none" stroke-dasharray="6 2">
+                <animateTransform attributeName="transform" type="rotate" from="0 36 168" to="-360 36 168" dur="5s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="36" cy="168" r="4" fill="rgba(155,255,0,0.7)"/>
+            </g>
+            <g transform="translate(372,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.2)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.3)" font-family="monospace" font-size="10">13</text>
+              <rect x="6" y="8" width="60" height="90" rx="3" stroke="rgba(100,200,220,0.35)" stroke-width="1" fill="rgba(100,200,220,0.02)"/>
+              <circle cx="36" cy="228" r="34" stroke="rgba(155,255,0,0.3)" stroke-width="1.5" fill="none">
+                <animate attributeName="r" values="26;34;26" dur="4s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="36" cy="228" r="4" fill="rgba(155,255,0,0.5)"/>
+            </g>
+            <!-- Moving truck -->
+            <g>
+              <rect x="324" y="302" width="60" height="98" rx="4" stroke="rgba(100,200,220,0.6)" stroke-width="1.5" fill="none"/>
+              <rect x="330" y="308" width="48" height="38" rx="3" stroke="rgba(100,200,220,0.35)" stroke-width="1" fill="none"/>
+              <circle cx="290" cy="340" r="34" stroke="rgba(155,255,0,0.45)" stroke-width="1" fill="none" stroke-dasharray="4 3">
+                <animateTransform attributeName="transform" type="rotate" from="0 290 340" to="360 290 340" dur="6s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="290" cy="340" r="4" fill="rgba(155,255,0,0.7)"/>
+            </g>
+          </svg>
+        </div>
+
+        <!-- SCENE 3: Data-rich, gate open -->
+        <div class="dock-scene" id="scene3" style="opacity:0">
+          <svg style="width:88%;max-width:520px;height:88%" viewBox="0 0 520 460" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Lane 6 -->
+            <g transform="translate(20,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.18)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.28)" font-family="monospace" font-size="10">6</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.3)" stroke-width="1" fill="rgba(100,200,220,0.02)"/>
+            </g>
+            <!-- Lane 8 -->
+            <g transform="translate(108,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.18)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.28)" font-family="monospace" font-size="10">8</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.3)" stroke-width="1" fill="rgba(100,200,220,0.02)"/>
+            </g>
+            <!-- Lane 10 — GATE OPEN -->
+            <g transform="translate(196,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(155,255,0,0.6)" stroke-width="1.5" fill="rgba(155,255,0,0.04)"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(155,255,0,0.7)" font-family="monospace" font-size="10">10</text>
+            </g>
+            <!-- Lane 12 -->
+            <g transform="translate(284,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.18)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.28)" font-family="monospace" font-size="10">12</text>
+              <rect x="6" y="8" width="60" height="100" rx="3" stroke="rgba(100,200,220,0.3)" stroke-width="1" fill="rgba(100,200,220,0.02)"/>
+            </g>
+            <!-- Lane 13 -->
+            <g transform="translate(372,30)">
+              <rect width="72" height="380" rx="5" stroke="rgba(100,200,220,0.18)" stroke-width="1" fill="none"/>
+              <text x="36" y="-10" text-anchor="middle" fill="rgba(100,200,220,0.28)" font-family="monospace" font-size="10">13</text>
+              <rect x="6" y="8" width="60" height="90" rx="3" stroke="rgba(100,200,220,0.3)" stroke-width="1" fill="rgba(100,200,220,0.02)"/>
+              <rect x="6" y="108" width="60" height="60" rx="3" stroke="rgba(100,200,220,0.18)" stroke-width="1" fill="none"/>
+            </g>
+            <!-- GATE OPEN badge -->
+            <rect x="160" y="298" width="228" height="48" rx="5" fill="rgba(155,255,0,0.92)"/>
+            <text x="274" y="327" text-anchor="middle" fill="#050505" font-family="monospace" font-size="11" font-weight="700" letter-spacing="2.5">GATE OPEN</text>
+            <!-- Info badge -->
+            <rect x="20" y="365" width="480" height="48" rx="6" fill="rgba(8,16,12,0.92)" stroke="rgba(100,200,220,0.18)" stroke-width="1"/>
+            <text x="44" y="393" fill="rgba(100,200,220,0.65)" font-family="monospace" font-size="9.5" letter-spacing="1.5">AMERICAN FREIGHT A54DC</text>
+            <text x="330" y="393" fill="rgba(155,255,0,0.9)" font-family="monospace" font-size="9.5" letter-spacing="1.5">MOVE ASSET TO SPOT C</text>
+          </svg>
+        </div>
+
+        <!-- Scan line -->
+        <div id="scanLine"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Spacer -->
+  <div style="height:400vh;"></div>
+</div>
+
+<!-- WHITE → TEAL DIVIDER -->
+<div class="teal-divider-top">
+  <svg viewBox="0 0 1440 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:80px;">
+    <path d="
+      M0,0 L0,68
+      C0,68 200,68 280,68
+      C320,68 320,0 360,0
+      L1080,0
+      C1120,0 1120,68 1160,68
+      C1240,68 1440,68 1440,68
+      L1440,0 Z
+    " fill="#0a2118"/>
+  </svg>
+</div>
+
+<!-- CLOSING -->
+<section id="closing">
+  <div class="closing-grid"></div>
+  <div class="closing-dots"></div>
+  <p class="closing-sub" id="closingSub">That's the</p>
+  <h2 class="closing-title" id="closingTitle">
+    <span class="closing-title-line"><span class="closing-title-word">Yard </span><span class="closing-title-word">Operating</span></span>
+    <span class="closing-title-line"><span class="closing-title-word">System.</span></span>
+  </h2>
+</section>
+
+<!-- Progress dots -->
+<div id="progressDots">
+  <div class="pdot" data-i="0"></div>
+  <div class="pdot" data-i="1"></div>
+  <div class="pdot" data-i="2"></div>
+  <div class="pdot" data-i="3"></div>
+</div>
+
+<script>
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+/* ─── CURSOR ─── */
+const cursor = document.getElementById('cursor');
+const cursorRing = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  gsap.to(cursor, { x: mx, y: my, duration: 0.06, ease: 'none' });
+});
+gsap.ticker.add(() => {
+  rx += (mx - rx) * 0.1;
+  ry += (my - ry) * 0.1;
+  gsap.set(cursorRing, { x: rx, y: ry });
+});
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    gsap.to(cursorRing, { width: 54, height: 54, borderColor: 'rgba(155,255,0,0.7)', duration: 0.3 });
+    gsap.to(cursor, { width: 5, height: 5, duration: 0.2 });
+  });
+  el.addEventListener('mouseleave', () => {
+    gsap.to(cursorRing, { width: 34, height: 34, borderColor: 'rgba(155,255,0,0.45)', duration: 0.3 });
+    gsap.to(cursor, { width: 8, height: 8, duration: 0.2 });
+  });
+});
+
+/* ─── HERO ENTRANCE ─── */
+gsap.from('.hero-grid', { opacity: 0, duration: 1.6, ease: 'power2.out' });
+gsap.from('.hero-grid-dots', { opacity: 0, duration: 2, delay: 0.4, ease: 'power2.out' });
+
+/* ─── HEADLINE WORDS ─── */
+const headlineEl = document.getElementById('headlineText');
+const words = headlineEl.textContent.trim().split(/\s+/);
+headlineEl.innerHTML = '';
+words.forEach(w => {
+  const span = document.createElement('span');
+  span.className = 'headline-word';
+  span.style.marginRight = '0.22em';
+  span.innerHTML = `<span class="headline-word-inner">${w}</span>`;
+  headlineEl.appendChild(span);
+});
+ScrollTrigger.create({
+  trigger: '#headline', start: 'top 80%',
+  onEnter: () => gsap.to('.headline-word-inner', { y: 0, duration: 0.75, ease: 'power3.out', stagger: 0.038 })
+});
+
+/* ─── NAV COLOR ZONES ─── */
+const nav = document.getElementById('navbar');
+ScrollTrigger.create({
+  trigger: '#headline', start: 'top 58px', end: 'bottom 58px',
+  onEnter: () => { nav.classList.add('on-white'); nav.classList.remove('on-teal'); },
+  onLeave: () => { nav.classList.remove('on-white'); },
+  onEnterBack: () => { nav.classList.add('on-white'); nav.classList.remove('on-teal'); },
+  onLeaveBack: () => { nav.classList.remove('on-white'); }
+});
+ScrollTrigger.create({
+  trigger: '#scroll-story', start: 'top 58px', end: 'bottom 58px',
+  onEnter: () => { nav.classList.add('on-white'); nav.classList.remove('on-teal'); },
+  onLeave: () => { nav.classList.remove('on-white'); },
+  onEnterBack: () => { nav.classList.add('on-white'); nav.classList.remove('on-teal'); },
+  onLeaveBack: () => { nav.classList.remove('on-white'); }
+});
+ScrollTrigger.create({
+  trigger: '#closing', start: 'top 58px',
+  onEnter: () => { nav.classList.add('on-teal'); nav.classList.remove('on-white'); },
+  onLeaveBack: () => { nav.classList.remove('on-teal'); nav.classList.add('on-white'); }
+});
+
+/* ─── SCROLL STORY ─── */
+const titles = ['#storyTitle0','#storyTitle1','#storyTitle2','#storyTitle3'];
+const scenes = ['#scene0','#scene1','#scene2','#scene3'];
+const numEl = document.getElementById('stepNum');
+const pdots = document.querySelectorAll('.pdot');
+const progressDots = document.getElementById('progressDots');
+const numLabels = ['01','02','03','04'];
+let currentStep = -1;
+
+titles.forEach(t => gsap.set(t, { opacity: 0, y: 28 }));
+gsap.set('#truck0', { opacity: 0, y: 80 });
+
+function activateStep(i) {
+  if (i === currentStep) return;
+  currentStep = i;
+
+  gsap.to(numEl, { opacity: 0, y: -8, duration: 0.18, onComplete: () => {
+    numEl.textContent = numLabels[i];
+    gsap.to(numEl, { opacity: 1, y: 0, duration: 0.28 });
+  }});
+
+  titles.forEach((t, idx) => {
+    if (idx === i) gsap.fromTo(t, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.55, ease: 'power3.out' });
+    else gsap.to(t, { opacity: 0, y: -18, duration: 0.35, ease: 'power2.in' });
+  });
+
+  scenes.forEach((s, idx) => gsap.to(s, { opacity: idx === i ? 1 : 0, duration: 0.65, ease: 'power2.inOut' }));
+
+  if (i === 0) gsap.fromTo('#truck0', { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 0.25 });
+  if (i === 2) {
+    gsap.fromTo('#scanLine', { opacity: 0, top: '18%' }, {
+      opacity: 1, top: '82%', duration: 2.2, ease: 'power1.inOut',
+      onComplete: () => gsap.to('#scanLine', { opacity: 0, duration: 0.4 })
+    });
+  }
+  pdots.forEach((d, idx) => d.classList.toggle('active', idx === i));
+}
+
+ScrollTrigger.create({
+  trigger: '#scroll-story',
+  start: 'top top', end: 'bottom bottom',
+  onEnter: () => { progressDots.style.opacity = '1'; activateStep(0); },
+  onLeave: () => { progressDots.style.opacity = '0'; },
+  onEnterBack: () => { progressDots.style.opacity = '1'; },
+  onLeaveBack: () => { progressDots.style.opacity = '0'; },
+  onUpdate: self => activateStep(Math.min(3, Math.floor(self.progress * 4)))
+});
+
+pdots.forEach((dot, i) => {
+  dot.addEventListener('click', () => {
+    const el = document.getElementById('scroll-story');
+    const top = el.offsetTop;
+    const h = el.scrollHeight - window.innerHeight;
+    gsap.to(window, { scrollTo: top + (i / 4) * h + 10, duration: 0.9, ease: 'power2.inOut' });
+  });
+});
+
+/* ─── HERO GRID PARALLAX ─── */
+gsap.to('.hero-grid', {
+  y: '25%', ease: 'none',
+  scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true }
+});
+gsap.to('.hero-grid-dots', {
+  y: '18%', ease: 'none',
+  scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true }
+});
+
+/* ─── CLOSING ─── */
+gsap.set('#closingSub', { y: 16, opacity: 0 });
+gsap.set('.closing-title-word', { y: '110%' });
+ScrollTrigger.create({
+  trigger: '#closing', start: 'top 72%',
+  onEnter: () => {
+    gsap.to('#closingSub', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
+    gsap.to('.closing-title-word', { y: '0%', duration: 0.85, ease: 'power3.out', stagger: 0.09, delay: 0.15 });
+  }
+});
+
+ScrollTrigger.refresh();
+</script>
+</body>
+</html>
