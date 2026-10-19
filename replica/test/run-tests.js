@@ -39,11 +39,12 @@ async function check(name, fn){
   });
 
   // T04 thesis word reveal triggers on scroll into view
+  // NOTE: .revealed is applied to the h2.reveal-words element (word-mask host), not the section.
   await check('T04 thesis reveals words', async()=>{
     await page.locator('#thesis').scrollIntoViewIfNeeded();
     await page.waitForTimeout(900);
-    const revealed = await page.locator('#thesis.revealed').count();
-    if(!revealed) throw new Error('.revealed not applied');
+    const revealed = await page.locator('#thesis .reveal-words.revealed').count();
+    if(!revealed) throw new Error('.revealed not applied to #thesis .reveal-words');
     const tf = await page.locator('.wmask > span').first().evaluate(el=>getComputedStyle(el).transform);
     if(tf !== 'none' && !/matrix\(1, 0, 0, 1, 0, 0\)/.test(tf)) throw new Error('words still hidden: '+tf);
   });
@@ -92,14 +93,23 @@ async function check(name, fn){
     if(!(await page.locator('.closing.revealed').count())) throw new Error('closing not revealed');
   });
 
-  // T10 media videos have posters that exist (no broken src)
+  // T10 media videos have posters that exist on disk (no broken src)
+  // NOTE: file:// pages block fetch() by CORS in Chromium, so verify via fs + element load state.
   await check('T10 video posters load', async()=>{
-    const bad = await page.$$eval('.card video', vids => vids.map(v=>
-      fetch(v.getAttribute('poster')).then(r=>r.ok?null:'broken '+v.getAttribute('poster')).catch(()=>'fetchfail '+v.getAttribute('poster'))
-    ));
-    const results = await Promise.all(bad);
-    const fails = results.filter(Boolean);
-    if(fails.length) throw new Error(fails.join(','));
+    const fs = require('fs');
+    const root = path.resolve(__dirname, '..', '..');
+    const posters = await page.$$eval('.card video', vids => vids.map(v=>v.getAttribute('poster')));
+    if(!posters.length) throw new Error('no video posters found');
+    const missing = posters.filter(p => !fs.existsSync(path.resolve(root, p)));
+    if(missing.length) throw new Error('missing poster files: '+missing.join(','));
+    // force-load each poster and confirm naturalWidth>0 (image actually decodes)
+    const bad = await page.$$eval('.card video', vids => Promise.all(vids.map(v=>new Promise(res=>{
+      const img = new Image();
+      img.onload = ()=> res(img.naturalWidth>0 ? null : 'zero-size '+v.getAttribute('poster'));
+      img.onerror = ()=> res('broken '+v.getAttribute('poster'));
+      img.src = v.getAttribute('poster');
+    })))).then(rs=>rs.filter(Boolean));
+    if(bad.length) throw new Error(bad.join(','));
   });
 
   // T11 footer links have hrefs; landmarks exist
