@@ -1,0 +1,21 @@
+id,feature,section,priority,status,notes
+F01,Fixed pill navbar with blur and per-section theme swap,S1,must,planned,states: dark / on-white / on-teal
+F02,Logo lockup + nav links with dropdown affordance,S1,must,planned,Product Markets Insights Resources About
+F03,Primary CTA button in navbar,S1,must,planned,Contact
+F04,Hero technical grid + dot overlay with scroll parallax,S2,should,planned,reduced-motion: disable parallax
+F05,Concave scallop section divider (SVG),S2/S5,must,planned,inverts between light/dark zones
+F06,Thesis headline word-by-word mask reveal,S3,must,planned,staggered translate under overflow clip
+F07,Sticky two-column scroll story (4 steps),S4,must,planned,pin while progress 0..1 drives step index
+F08,Step number + rotating step titles with enter/exit animation,S4,must,planned,one visible title at a time
+F09,Scene 01 gate check-in truck schematic,S4a,must,planned,inline SVG wireframe style
+F10,Scene 02 dock lane overview with highlighted lane,S4b,must,planned,lane ids are our own data
+F11,Scene 03 AI-vision reticles + scan-line sweep,S4c,must,planned,CSS/SVG animations not video
+F12,Scene 04 open-gate badge + move-order info bar,S4d,must,planned,copy written fresh
+F13,Progress dots synced to steps,S4,should,planned,clickable -> smooth scroll to step
+F14,Closing statement with line-mask word reveal,S5,must,planned,teal theme section
+F15,Media showcase strip using our MP4 walkthroughs,S6,should,planned,poster frames generated locally
+F16,Footer link columns + contact CTA,S7,must,planned,fresh copy
+F17,Custom cursor dot + trailing ring,S1,could,planned,pointer:fine only; hidden on coarse/reduced-motion
+F18,Responsive layout down to 375px,all,must,planned,story collapses to stacked cards
+F19,Accessibility: landmarks focus order contrast >=4.5,all,must,planned,verified with contrast tool
+F20,Performance: no framework one file system fonts fallback LCP < 2.5s,all,should,planned,GSAP via CDN deferred or vanilla rAF
